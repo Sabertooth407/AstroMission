@@ -193,6 +193,24 @@
     box-shadow: 0 0 12px #00c6ff;
     transform: scale(1.05);
   }
+
+  @media (max-width: 900px) {
+
+  .arrow {
+    font-size: 10px;
+  }
+
+  .letter {
+    width: 32px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .slots {
+    gap: 4px;
+  }
+
+}
 </style>
 
 <div class="wrapper">

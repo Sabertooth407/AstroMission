@@ -15,7 +15,8 @@
 
     lines = Array.from({ length: count }, () => ({
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      cut: false
+      cut: false,
+      tapped: false
     }));
   }
 
@@ -69,7 +70,18 @@
 export let active = false;
 
 function cut(index) {
-  if (!active || solved) return;   // 🔥 ADD THIS
+  if (!active || solved) return;
+
+  if (lines[index].cut) return; // 🔥 prevent re-taps
+
+  // 🔥 tap feedback
+  lines[index].tapped = true;
+  lines = [...lines];
+
+  setTimeout(() => {
+    lines[index].tapped = false;
+    lines = [...lines];
+  }, 180);
 
   if (index === solveIndex()) {
     lines[index].cut = true;
@@ -101,7 +113,7 @@ function cut(index) {
 
   background: #1a2a3a;
   border-radius: 10px;
-  padding: 12px;
+  padding: 8px;
 
   box-sizing: border-box;
 
@@ -117,15 +129,33 @@ function cut(index) {
     opacity: 0.6;
     margin-bottom: 10px;
   }
+@media (max-width: 900px) {
 
+  .title {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+
+}
   .lines {
   flex: 1; /* 🔥 take remaining space */
 
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly; /* 🔥 key fix */
+  justify-content: center;
+  gap: 6px;
 
   overflow: hidden;
+}
+
+@media (max-width: 900px) {
+
+  .node {
+    width: 8px;
+    height: 8px;
+    opacity: 0.6;
+  }
+
 }
 
   /* EACH WIRE ROW */
@@ -192,7 +222,57 @@ function cut(index) {
   .wire.blue { background: #00aaff; }
   .wire.yellow { background: #ffd500; }
 
+@media (max-width: 900px) {
 
+  .wire {
+    height: 12px;              /* 🔥 bigger tap target ONLY on phone */
+    border-radius: 6px;
+    margin: 4px 6px;         /* more spacing between wires */
+    touch-action: manipulation;
+  }
+
+  .wire:hover {
+    transform: none;           /* 🔥 disable useless hover on phone */
+    box-shadow: none;
+  }
+
+  .wire:active {
+    transform: scaleY(1.2);    /* 🔥 tap feedback */
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  .node {
+    width: 14px;
+    height: 14px;
+  }
+
+  .title {
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+
+}
+@keyframes tapFlash {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(1.25); }
+  100% { transform: scaleY(1); }
+}
+
+.wire.tapped {
+  animation: tapFlash 0.18s ease;
+}
+
+@media (max-width: 900px) {
+
+  .lines {
+    gap: 4px;
+  }
+
+  .wire {
+    margin: 6px 8px;
+  }
+
+}
 </style>
 
 <div class="wrapper">
@@ -207,7 +287,7 @@ function cut(index) {
           <div class="node"></div>
 
           <div
-            class="wire {line.color} {line.cut ? 'cut' : ''}"
+            class="wire {line.color} {line.cut ? 'cut' : ''} {line.tapped ? 'tapped' : ''}"
             on:click={() => cut(i)}
           ></div>
 

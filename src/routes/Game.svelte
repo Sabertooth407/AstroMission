@@ -1,5 +1,5 @@
 <script>
-  import { onMount, createEventDispatcher } from "svelte";
+  import { onMount, createEventDispatcher, tick } from "svelte";
   import Background from "../Background.svelte";
 
   import PowerLines from "../components/modules/PowerLines.svelte";
@@ -12,6 +12,21 @@
 let bgMusic;
 let bgStarted = false;
 let voice = null;
+let expandedPanel = null;
+
+function isMobile() {
+  return window.innerWidth < 900;
+}
+
+function openPanel(index) {
+  if (isMobile() && !gameOver) {
+    expandedPanel = index;
+  }
+}
+
+function closePanel() {
+  expandedPanel = null;
+}
 
 function initVoice() {
   const voices = speechSynthesis.getVoices();
@@ -35,6 +50,16 @@ function speak(text) {
 
   speechSynthesis.speak(utter);
 }
+function vibrate(pattern) {
+  if (navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+}
+const HAPTICS = {
+  STRIKE: [120, 40, 120, 40, 180],   // ⚠️ aggressive, alarming
+  SUCCESS: [60, 40, 60],             // ✅ quick double pulse
+  WIN: [80, 40, 80, 40, 200],        // 🎉 longer celebration
+};
   let timeLeft = 420;
   let damage = 0;
   let strikeFlash = false;
@@ -154,9 +179,13 @@ setTimeout(() => {
 
   async function endGame(res) {
   clearInterval(interval);
+
+  expandedPanel = null; // 🔥 FORCE CLOSE (more reliable than function)
+
+  await tick(); // 🔥 IMPORTANT: wait for DOM update
+
   result = res;
   gameOver = true;
-
   if (!teamData) return;
 
   const payload = {
@@ -186,22 +215,26 @@ setTimeout(() => {
   function handleSuccess(index) {
     activeModules[index].solved = true;
     activeModules = [...activeModules];
+    vibrate(HAPTICS.SUCCESS);
 speak("Module complete");
     if (activeModules.every(m => m.solved)) {
+      vibrate(HAPTICS.WIN);
       endGame("WIN");
     }
   }
 
   function handleStrike() {
     damage++;
-
+vibrate(HAPTICS.STRIKE); 
     strikeFlash = true;
     showStrikeText = true;
 speak("Warning. System failure detected");
     setTimeout(() => (strikeFlash = false), 400);
     setTimeout(() => (showStrikeText = false), 800);
 
-    if (damage >= 3) endGame("LOSS");
+    if (damage >= 3)
+    {vibrate([200, 50, 200, 50, 300]);
+      endGame("LOSS");}
   }
   window.addEventListener("click", () => {
   if (bgMusic && !bgStarted) {
@@ -286,6 +319,14 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   right: 25px;
   display: flex;
   gap: 8px;
+  z-index: 200;
+}
+
+@media (max-width: 900px) {
+  .heart {
+    width: 26px;
+    height: 26px;
+  }
 }
 
 .heart {
@@ -324,15 +365,25 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 
   gap: 18px;
 }
-
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
 /* PANELS */
 .panel {
   background: rgba(0,20,40,0.6);
+  transform-origin: top left;
   border-radius: 12px;
   backdrop-filter: blur(6px);
   position: relative;
   overflow: hidden;
   padding: 10px;   /* ADD THIS */
+}
+@media (max-width: 900px) {
+  .panel {
+    padding: 6px;
+  }
 }
 
 .panel-title {
@@ -346,11 +397,18 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 .module {
   width: 100%;
   height: 100%;
+   min-height: 0;   /* 🔥 THIS FIXES OVERFLOW */
+  min-width: 0;
   position: relative;
 
   display: flex;
   align-items: center;
   justify-content: center;
+}
+@media (max-width: 900px) {
+  .module {
+    transform-origin: center;
+  }
 }
 
 .module:hover {
@@ -359,8 +417,19 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 
 .module.active {
   border: 2px solid #00c6ff;
+  transform: scale(0.97);
+}
+.module,
+.fuel-system,
+.nav-container,
+.data-layout,
+.terminal {
+  min-height: 0;
 }
 
+.nav-container {
+  overflow: hidden;
+}
 .module.solved {
   border: 3px solid #00ff88 !important;
   box-shadow: 0 0 12px #00ff88;
@@ -368,8 +437,9 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 
 /* STRIKE */
 .strike-overlay {
-  position: absolute;
+  position: fixed;   /* 🔥 change from absolute */
   inset: 0;
+  z-index: 300;      /* 🔥 above EVERYTHING */
 
   background: radial-gradient(circle, rgba(255,0,0,0.9), transparent 70%);
   animation: strikeBlast 0.4s ease;
@@ -382,7 +452,8 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 }
 
 .strike-text {
-  position: absolute;
+  position: fixed;   /* 🔥 same fix */
+  z-index: 301;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -482,6 +553,11 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   width: 100%;
   padding: 10px 0;
 }
+@media (max-width: 900px) {
+  .comms {
+    height: 40px;   /* 🔥 fixed height prevents distortion */
+  }
+}
 
 .wave {
   flex: 1;
@@ -496,6 +572,11 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 
   animation: waveAnim infinite ease-in-out;
   animation-delay: var(--delay);
+}
+@media (max-width: 900px) {
+  .wave {
+    max-width: 6px;
+  }
 }
 
 @keyframes waveAnim {
@@ -565,7 +646,7 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 301;
 }
 
 .end-box {
@@ -615,8 +696,9 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   box-shadow: 0 0 8px #00c6ff;
 }
 .terminal {
-  height: 65%;              /* 🔥 fills rest of panel */
-  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;     
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -675,6 +757,13 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
     0 0 30px rgba(0,200,255,0.7),
     inset -10px -10px 25px rgba(0,0,0,0.6);
 }
+@media (max-width: 900px) {
+  .earth {
+    width: 70px;
+    height: 70px;
+  }
+}
+
 .earth::after {
   content: "";
   position: absolute;
@@ -828,6 +917,157 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   /* 🔥 THIS IS THE MAGIC */
   transform: translateX(-40px);
 }
+
+
+@media (max-width: 500px) {
+  .grid {
+    top: 80px;
+    gap: 10px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .logo {
+    left: 15px;
+    height: 30px;
+  }
+
+  .damage {
+    right: 10px;
+  }
+}
+@media (max-width: 900px) {
+
+  .panel {
+    transition: 0.25s ease;
+  }
+
+  .panel.expanded {
+    position: fixed;
+    inset: 0;
+
+    transform: none;   /* 🔥 CRITICAL */
+    width: 100%;
+    height: 100%;
+
+    margin: 0;
+    padding: 10px;
+
+    z-index: 100;
+    border-radius: 0;
+    animation: zoomIn 0.25s ease;
+    background: #000814;
+    padding:
+  calc(10px + env(safe-area-inset-top))
+  calc(10px + env(safe-area-inset-right))
+  calc(10px + env(safe-area-inset-bottom))
+  calc(10px + env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;  
+  }
+
+  @keyframes zoomIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+  .container {
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+  .hidden {
+    display: none;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 90;
+  }
+
+}
+
+@media (max-width: 900px) {
+  .timer {
+    font-size: clamp(28px, 8vw, 72px);
+  }
+}
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+
+  font-size: 22px;
+  color: #fff;
+
+  z-index: 200;
+  cursor: pointer;
+
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  backdrop-filter: blur(4px);
+}
+
+@media (max-width: 900px) {
+
+  /* 🔥 ONLY scale CLOSED panels */
+  .panel:not(.expanded) {
+    transform: scale(0.82);
+    width: 128%;
+    height: 128%;
+  }
+
+  /* 🔥 expanded = TRUE fullscreen */
+
+    
+  }
+
+@media (max-width: 900px) {
+
+  .panel {
+    font-size: 0.85em;   /* 🔥 shrinks EVERYTHING inside */
+  }
+
+  .terminal div {
+    font-size: 9px;
+  }
+
+  .nav-stats {
+    font-size: 10px;
+  }
+
+  .fuel-text {
+    font-size: 10px;
+    margin-bottom: 2 px;
+  }
+
+
+}
+
+@media (max-width: 900px) {
+  .fuel-slot {
+    height: 28px;   /* 🔥 smaller, fits grid */
+  }
+}
 </style>
 
 <div class="container {redAlert ? 'alert-active' : ''}">
@@ -853,10 +1093,30 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   <div class="grid">
 
     <!-- MODULE 1 -->
-    <div class="panel">
+    <div class="panel 
+  {expandedPanel === 0 ? 'expanded' : ''} 
+  {isMobile() && expandedPanel !== null && expandedPanel !== 0 ? 'hidden' : ''}"
+  on:click={() => openPanel(0)}
+>
+{#if isMobile() && expandedPanel === 0}
+  <div class="close-btn" on:click|stopPropagation={closePanel}>✕</div>
+{/if}
+{#if isMobile() && expandedPanel === 0}
+  <div class="panel-timer">
+    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+  </div>
+{/if}
       {#if activeModules[0]}
         <div class="module {activeModules[0].solved ? 'solved' : ''} {activeModuleIndex === 0 ? 'active' : ''}"
-          on:click={() => activeModuleIndex = 0}>
+          on:click={(e) => {
+  e.stopPropagation(); // 🔥 prevents panel click conflict
+
+  if (isMobile()) {
+    expandedPanel = 0;
+  }
+
+  activeModuleIndex = 0;
+}}>
           <svelte:component this={activeModules[0].component}
             {serial} {indicator} {fuel} {timeLeft} {damage}
             active={activeModuleIndex === 0}
@@ -867,7 +1127,19 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
     </div>
 
     <!-- NAV -->
-    <div class="panel">
+    <div class="panel 
+  {expandedPanel === 1 ? 'expanded' : ''} 
+  {isMobile() && expandedPanel !== null && expandedPanel !== 1 ? 'hidden' : ''}"
+  on:click={() => openPanel(1)}
+>
+{#if isMobile() && expandedPanel === 1}
+  <div class="close-btn" on:click|stopPropagation={closePanel}>✕</div>
+{/if}
+{#if isMobile() && expandedPanel === 1}
+  <div class="panel-timer">
+    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+  </div>
+{/if}
   <div class="panel-title">NAV</div>
 
   <div class="nav-container">
@@ -901,10 +1173,30 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 </div>
 
     <!-- MODULE 2 -->
-    <div class="panel">
+    <div class="panel 
+  {expandedPanel === 2 ? 'expanded' : ''} 
+  {isMobile() && expandedPanel !== null && expandedPanel !== 2 ? 'hidden' : ''}"
+  on:click={() => openPanel(2)}
+>
+{#if isMobile() && expandedPanel === 2}
+  <div class="close-btn" on:click|stopPropagation={closePanel}>✕</div>
+{/if}
+{#if isMobile() && expandedPanel === 2}
+  <div class="panel-timer">
+    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+  </div>
+{/if}
       {#if activeModules[1]}
         <div class="module {activeModules[1].solved ? 'solved' : ''} {activeModuleIndex === 1 ? 'active' : ''}"
-          on:click={() => activeModuleIndex = 1}>
+          on:click={(e) => {
+  e.stopPropagation(); // 🔥 prevents panel click conflict
+
+  if (isMobile()) {
+    expandedPanel = 2;
+  }
+
+  activeModuleIndex = 1;
+}}>
           <svelte:component this={activeModules[1].component}
             {serial} {indicator} {fuel} {timeLeft} {damage}
             active={activeModuleIndex === 1}
@@ -915,7 +1207,19 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
     </div>
 
     <!-- INFO -->
-    <div class="panel">
+    <div class="panel 
+  {expandedPanel === 3 ? 'expanded' : ''} 
+  {isMobile() && expandedPanel !== null && expandedPanel !== 3 ? 'hidden' : ''}"
+  on:click={() => openPanel(3)}
+>
+{#if isMobile() && expandedPanel === 3}
+  <div class="close-btn" on:click|stopPropagation={closePanel}>✕</div>
+{/if}
+{#if isMobile() && expandedPanel === 3}
+  <div class="panel-timer">
+    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+  </div>
+{/if}
       <div class="panel-title">DATA</div>
       <div style="padding:20px">
 <div class="data-layout">
@@ -1002,10 +1306,30 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
     </div>
 
     <!-- MODULE 3 -->
-    <div class="panel">
+   <div class="panel 
+  {expandedPanel === 4 ? 'expanded' : ''} 
+  {isMobile() && expandedPanel !== null && expandedPanel !== 4 ? 'hidden' : ''}"
+  on:click={() => openPanel(4)}
+>
+{#if isMobile() && expandedPanel === 4}
+  <div class="close-btn" on:click|stopPropagation={closePanel}>✕</div>
+{/if}
+{#if isMobile() && expandedPanel === 4}
+  <div class="panel-timer">
+    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+  </div>
+{/if}
       {#if activeModules[2]}
         <div class="module {activeModules[2].solved ? 'solved' : ''} {activeModuleIndex === 2 ? 'active' : ''}"
-          on:click={() => activeModuleIndex = 2}>
+          on:click={(e) => {
+  e.stopPropagation(); // 🔥 prevents panel click conflict
+
+  if (isMobile()) {
+    expandedPanel = 4;
+  }
+
+  activeModuleIndex = 2;
+}}>
           <svelte:component this={activeModules[2].component}
             {serial} {indicator} {fuel} {timeLeft} {damage}
             active={activeModuleIndex === 2}
@@ -1016,7 +1340,19 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
     </div>
 
     <!-- FUEL -->
-    <div class="panel">
+    <div class="panel 
+  {expandedPanel === 5 ? 'expanded' : ''} 
+  {isMobile() && expandedPanel !== null && expandedPanel !== 5 ? 'hidden' : ''}"
+  on:click={() => openPanel(5)}
+>
+{#if isMobile() && expandedPanel === 5}
+  <div class="close-btn" on:click|stopPropagation={closePanel}>✕</div>
+{/if}
+{#if isMobile() && expandedPanel === 5}
+  <div class="panel-timer">
+    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+  </div>
+{/if}
       <div class="panel-title">FUEL</div>
       <div class="fuel-system">
 
@@ -1070,5 +1406,7 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
       </div>
     </div>
   {/if}
-
+{#if expandedPanel !== null}
+  <div class="overlay" on:click={closePanel}></div>
+{/if}
 </div>

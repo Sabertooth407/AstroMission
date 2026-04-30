@@ -20,13 +20,26 @@
     temp = Math.max(850, temp + (Math.random() * 20 - 10));
     status = Math.random() > 0.2 ? "CRITICAL" : "WARNING";
   }, 800);
+
+  function enterFullscreen() {
+  const el = document.documentElement;
+
+  if (el.requestFullscreen) {
+    el.requestFullscreen();
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+  }
+}
 </script>
 
 <style>
+* {
+  touch-action: manipulation;
+}
   .container {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 
     display: flex;
@@ -122,7 +135,7 @@
   }
 
   .logo {
-    width: 500px;
+    width: min(70vw, 500px);
     margin-bottom: 20px;
     filter: drop-shadow(0 0 20px #00c6ff);
   }
@@ -228,11 +241,40 @@
     font-size: 10px;
     opacity: 0.3;
   }
+
+
+  .orientation-lock {
+  position: fixed;
+  inset: 0;
+  background: #000814;
+  color: #4fd1ff;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  z-index: 999;
+  text-align: center;
+  font-family: monospace;
+}
+
+.orientation-lock span {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* 🔥 SHOW ONLY IN PORTRAIT */
+@media (orientation: portrait) {
+  .orientation-lock {
+    display: flex;
+  }
+}
 </style>
 
 <div
   class="container"
-  on:mousemove={handleMouse}
+  on:pointermove={handleMouse}
   style="--mx:{mouseX}px; --my:{mouseY}px;"
 >
 
@@ -275,9 +317,10 @@
     <div class="status">SYSTEM STATUS: {status}</div>
 
     <button
-      on:click={() => dispatch("play")}
-      on:mousedown={(e) => e.target.style.transform = "scale(0.95)"}
-      on:mouseup={(e) => e.target.style.transform = "scale(1.08)"}
+      on:click={() =>{ enterFullscreen();
+  dispatch("play");}}
+      on:pointerdown={(e) => e.target.style.transform = "scale(0.95)"}
+on:pointerup={(e) => e.target.style.transform = "scale(1.08)"}
     >
       ▶ START MISSION
     </button>
@@ -286,5 +329,8 @@
   <div class="footer">
     AstroSpace Simulation Interface v1.0
   </div>
-
+<div class="orientation-lock">
+  <div style="font-size:40px;">📱↻</div>
+  <span>Rotate your device to landscape</span>
+</div>
 </div>

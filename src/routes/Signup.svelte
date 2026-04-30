@@ -24,14 +24,16 @@
     }
 
     loading = true;
-const teamId = Date.now().toString();
+
+    const teamId = Date.now().toString();
+
     const payload = {
-  teamId,
-  teamName,
-  member1,
-  member2,
-  type: "ENTRY"
-};
+      teamId,
+      teamName,
+      member1,
+      member2,
+      type: "ENTRY"
+    };
 
     try {
       await fetch("https://script.google.com/macros/s/AKfycbxytICDtpJuj6qWckALpMrHGrqpH7N84ZKEN6eJwzmZNAIbrkOcxDLC_e1OACJFj6c0Lw/exec", {
@@ -54,7 +56,7 @@ const teamId = Date.now().toString();
 <style>
   .container {
     position: relative;
-    height: 100vh;
+    height: 100vh; /* desktop stays same */
     overflow: hidden;
 
     display: flex;
@@ -77,7 +79,6 @@ const teamId = Date.now().toString();
     animation: drift 60s linear infinite;
   }
 
-  /* particles */
   .particles {
     position: absolute;
     width: 200%;
@@ -93,7 +94,6 @@ const teamId = Date.now().toString();
     to { transform: translate(-200px, -200px); }
   }
 
-  /* scan overlay */
   .scan {
     position: absolute;
     width: 100%;
@@ -112,7 +112,6 @@ const teamId = Date.now().toString();
     to { transform: translateY(100%); }
   }
 
-  /* glow */
   .glow {
     position: absolute;
     width: 500px;
@@ -121,11 +120,10 @@ const teamId = Date.now().toString();
     filter: blur(80px);
   }
 
-  /* card */
+  /* DESKTOP BASE */
   .card {
     width: 340px;
     padding: 35px;
-
     border-radius: 10px;
 
     background: rgba(0, 20, 40, 0.65);
@@ -161,6 +159,7 @@ const teamId = Date.now().toString();
     width: 100%;
     margin: 10px 0;
     padding: 10px;
+    font-size: 16px; /* 🔥 fixes zoom */
 
     background: rgba(0, 10, 20, 0.9);
     border: 1px solid rgba(79, 209, 255, 0.4);
@@ -168,8 +167,6 @@ const teamId = Date.now().toString();
 
     color: #4fd1ff;
     outline: none;
-
-    transition: 0.2s;
   }
 
   input:focus {
@@ -178,53 +175,16 @@ const teamId = Date.now().toString();
   }
 
   button {
-    position: relative;
-    overflow: hidden;
-
     width: 100%;
     margin-top: 15px;
-    padding: 12px;
-
-    background: linear-gradient(90deg, #00c6ff, #0072ff);
-    border: none;
+    padding: 14px;
     border-radius: 5px;
 
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
     color: white;
     font-weight: bold;
-    letter-spacing: 1px;
+
     cursor: pointer;
-
-    transition: 0.2s;
-  }
-
-  button:hover {
-    box-shadow: 0 0 15px rgba(0, 198, 255, 0.8);
-    transform: scale(1.03);
-  }
-
-  button::before {
-    content: "";
-    position: absolute;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(
-      120deg,
-      transparent,
-      rgba(255,255,255,0.4),
-      transparent
-    );
-    transform: translateX(-100%);
-    animation: sweep 3s infinite;
-  }
-
-  @keyframes sweep {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   .error {
@@ -233,13 +193,50 @@ const teamId = Date.now().toString();
     margin-top: 5px;
   }
 
-  /* small HUD */
   .hud {
     position: absolute;
     left: 20px;
     bottom: 20px;
     font-size: 10px;
     opacity: 0.3;
+  }
+
+  /* 🔥 MOBILE ONLY FIXES */
+  @media (max-width: 900px) {
+
+    .container {
+      height: 100dvh;
+      overflow-y: auto;
+      padding: 20px;
+      align-items: flex-start;
+    }
+
+    .card {
+      width: min(90vw, 380px);
+      padding: 25px;
+      margin-top: 40px;
+    }
+  }
+
+  /* 🔥 LANDSCAPE LOCK */
+  .orientation-lock {
+    position: fixed;
+    inset: 0;
+    background: #000814;
+    color: #4fd1ff;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+
+    z-index: 999;
+  }
+
+  @media (orientation: portrait) {
+    .orientation-lock {
+      display: flex;
+    }
   }
 </style>
 
@@ -262,14 +259,19 @@ const teamId = Date.now().toString();
       <div class="error">{error}</div>
     {/if}
 
-    <button on:click={start} disabled={loading}>
+    <button on:pointerdown={start} disabled={loading}>
       {loading ? "Linking Systems..." : "START MISSION"}
     </button>
   </div>
 
-  <!-- subtle system HUD -->
   <div class="hud">
     FUEL: {fuel.toFixed(0)}% | NAV: READY | CORE: STABLE
+  </div>
+
+  <!-- landscape lock -->
+  <div class="orientation-lock">
+    <div style="font-size:40px;">📱↻</div>
+    <div>Rotate to landscape</div>
   </div>
 
 </div>

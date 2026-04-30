@@ -104,8 +104,10 @@ function getTextColor(color) {
 
 /* PANEL HOUSING */
 .panel {
-  width: 220px;
-  height: 180px;
+  width: 100%;
+  height: 100%;
+  max-width: 220px;
+  max-height: 180px;
 
   background: #1a2a3a;
   border-radius: 10px;
@@ -121,8 +123,8 @@ function getTextColor(color) {
 
 /* BUTTON */
 .button {
-  width: 110px;
-  height: 110px;
+  width: 50%;
+  aspect-ratio: 1;
 
   border-radius: 50%;
 
@@ -157,8 +159,8 @@ function getTextColor(color) {
 
 /* STRIP HOUSING */
 .strip {
-  width: 30px;
-  height: 120px;
+  width: 18%;
+  height: 70%;
 
   background: #0a1622;
   border-radius: 6px;
@@ -172,8 +174,8 @@ function getTextColor(color) {
 
 /* LIGHT INSIDE STRIP */
 .light {
-  width: 18px;
-  height: 100px;
+  width: 60%;
+  height: 80%;
 
   border-radius: 4px;
   opacity: 0.15;
@@ -194,7 +196,28 @@ function getTextColor(color) {
   font-weight: bold;
 }
 
+@media (max-width: 900px) {
 
+  .panel {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .button {
+    width: 55%;   /* slightly bigger for touch */
+  }
+
+  .strip {
+    width: 20%;
+    height: 75%;
+  }
+
+  .button span {
+    font-size: 12px;  /* prevent overflow */
+    text-align: center;
+  }
+
+}
 </style>
 
 <div class="wrapper">
@@ -206,8 +229,11 @@ function getTextColor(color) {
       class="button"
       style="background:{buttonColor}; color:{getTextColor(buttonColor)}"
       on:mousedown={press}
-      on:mouseup={release}
-      on:mouseleave={release}
+on:mouseup={release}
+on:mouseleave={release}
+
+on:touchstart={press}
+on:touchend={release}
     >
       <span>{label}</span>
     </div>

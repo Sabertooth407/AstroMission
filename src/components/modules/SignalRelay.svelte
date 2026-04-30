@@ -273,6 +273,57 @@ function restartModule() {
   0%,100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+
+@media (max-width: 900px) {
+
+  .panel {
+    gap: 14px;           /* 🔥 more spacing between buttons */
+    padding: 12px;
+  }
+
+  .btn {
+    border-radius: 12px;
+    opacity: 0.85;
+  }
+
+}
+@media (max-width: 900px) {
+
+  .btn:active {
+    transform: scale(0.85);
+    box-shadow:
+      0 0 25px currentColor,
+      inset 0 0 25px rgba(255,255,255,0.5);
+  }
+
+}
+@media (max-width: 900px) {
+
+  .wrapper {
+    transform: scale(0.92);   /* 🔥 fits better inside panel */
+    transform-origin: center;
+  }
+
+}
+@media (max-width: 900px) {
+
+  .restart-box {
+    padding: 14px 18px;
+  }
+
+  .restart-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .strike-text {
+    font-size: 14px;
+  }
+
+}
+.btn {
+  touch-action: manipulation;
+}
 </style>
 
 <div class="wrapper">

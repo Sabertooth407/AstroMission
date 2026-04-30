@@ -69,7 +69,7 @@
   .wrapper {
     width: 100%;
     height: 100%;
-    padding: 10px;
+    padding: 6px;
     box-sizing: border-box;
   }
 
@@ -78,7 +78,7 @@
     height: 100%;
     background: #1a2a3a;
     border-radius: 10px;
-    padding: 10px;
+    padding: 6px;
 
     display: flex;
     justify-content: center;
@@ -108,7 +108,7 @@ overflow: hidden;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
 
-    gap: 8px;
+    gap: 6px;
     min-height: 0;
   }
 
@@ -123,6 +123,8 @@ overflow: hidden;
     cursor: pointer;
     transition: 0.15s;
     overflow: hidden;
+    min-width: 0;
+  min-height: 0;
   }
 
   .panel:not(.active) .key {
@@ -140,11 +142,12 @@ overflow: hidden;
   }
 
 .key img {
-  width: 100%;
-  height: 100%;
+  width: 80%;
+  height: 80%;
   object-fit: contain;
-  max-width: 120px;
-  max-height: 120px;
+
+  max-width: 100%;
+  max-height: 100%;
 }
 
   .key:active {
@@ -156,6 +159,33 @@ overflow: hidden;
     border: 2px solid #00c6ff;
     box-shadow: 0 0 12px #00c6ff;
   }
+
+  @media (max-width: 900px) {
+
+  .wrapper {
+    padding: 4px;
+  }
+
+  .panel {
+    padding: 4px;
+  }
+
+  .grid {
+    gap: 4px;
+  }
+
+  .key img {
+    width: 75%;
+    height: 75%;
+  }
+
+}
+
+@media (max-width: 900px) {
+  .key:active {
+    transform: scale(0.9);
+  }
+}
 </style>
 
 <div class="wrapper">
@@ -165,6 +195,7 @@ overflow: hidden;
         <div
           class="key {selected.includes(sym) ? 'selected' : ''}"
           on:click={() => press(sym)}
+on:touchstart={() => press(sym)}
         >
           <img src={`/keypad/${sym}.png`} alt={sym} />
         </div>

@@ -13,6 +13,7 @@ let bgMusic;
 let bgStarted = false;
 let voice = null;
 let expandedPanel = null;
+let shakeScreen = false;
 
 function isMobile() {
   return window.innerWidth < 900;
@@ -147,6 +148,18 @@ onMount(() => {
   }, 120);
 }
 
+  let bootProgress = 0;
+let bootLogs = [];
+
+const LOGS = [
+  "Initializing navigation core...",
+  "Linking communication channels...",
+  "Calibrating sensors...",
+  "Authenticating crew...",
+  "Decrypting mission data...",
+  "Final system checks..."
+];
+
   onMount(() => {
     alertAudio = new Audio("/alert.mp3");
 alertAudio.loop = true;
@@ -201,6 +214,12 @@ setTimeout(() => {
   alertAudio.currentTime = 0;
 }
 
+if (res === "WIN") {
+    speak("Mission successful. All systems secured.");
+  } else {
+    speak("Mission failed. Critical system collapse.");
+  }
+
   try {
     await fetch("https://script.google.com/macros/s/AKfycbxytICDtpJuj6qWckALpMrHGrqpH7N84ZKEN6eJwzmZNAIbrkOcxDLC_e1OACJFj6c0Lw/exec", {
       method: "POST",
@@ -226,6 +245,8 @@ speak("Module complete");
   function handleStrike() {
     damage++;
 vibrate(HAPTICS.STRIKE); 
+shakeScreen = true;
+  setTimeout(() => shakeScreen = false, 400);
     strikeFlash = true;
     showStrikeText = true;
 speak("Warning. System failure detected");
@@ -236,12 +257,34 @@ speak("Warning. System failure detected");
     {vibrate([200, 50, 200, 50, 300]);
       endGame("LOSS");}
   }
-  window.addEventListener("click", () => {
-  if (bgMusic && !bgStarted) {
-    bgMusic.play().catch(() => {});
-    bgStarted = true;
-  }
+
+  
+
+
+onMount(() => {
+  let i = 0;
+
+  const interval = setInterval(() => {
+    if (bootProgress < 100) {
+      bootProgress += Math.random() * 8;
+
+      if (i < LOGS.length && Math.random() > 0.6) {
+        bootLogs = [...bootLogs, LOGS[i]];
+        i++;
+      }
+    } else {
+      bootProgress = 100;
+      clearInterval(interval);
+    }
+  }, 200);
 });
+
+function startGame() {
+  if (bootProgress < 100) return; // 🔥 prevents early click
+
+  bgMusic.play().catch(() => {});
+  bgStarted = true;
+}
 
   $: redAlert = timeLeft <= 120;
   $: {
@@ -281,6 +324,18 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap');
 
+@keyframes shake {
+  0% { transform: translate(0px, 0px); }
+  20% { transform: translate(-8px, 4px); }
+  40% { transform: translate(8px, -4px); }
+  60% { transform: translate(-6px, 2px); }
+  80% { transform: translate(6px, -2px); }
+  100% { transform: translate(0px, 0px); }
+}
+
+.container.shake {
+  animation: shake 0.4s ease;
+}
 .container {
   height: 100vh;
   width: 100vw;
@@ -642,17 +697,126 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 .end-screen {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.9);
+  background: radial-gradient(circle at center, #000814, #000);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 301;
+  overflow: hidden;
 }
 
+/* SCANLINES 🔥 */
+.end-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.03) 3px
+  );
+  pointer-events: none;
+}
+
+/* MAIN BOX */
 .end-box {
+  position: relative;
+  padding: 50px;
+  width: 420px;
   text-align: center;
-  padding: 40px;
-  border: 2px solid #00c6ff;
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.5s ease;
+}
+
+/* WIN STYLE */
+.end-box.win {
+  border: 2px solid #00ff88;
+  box-shadow:
+    0 0 25px #00ff88,
+    inset 0 0 20px rgba(0,255,150,0.2);
+}
+
+/* LOSS STYLE */
+.end-box.loss {
+  border: 2px solid red;
+  box-shadow:
+    0 0 25px red,
+    inset 0 0 20px rgba(255,0,0,0.2);
+}
+
+/* HEADER */
+.end-header {
+  font-size: 34px;
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+  animation: pulseText 1.2s infinite;
+}
+
+/* SUBTEXT */
+.end-sub {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 30px;
+}
+
+/* STATS GRID */
+.stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 25px;
+}
+
+.stat span {
+  font-size: 11px;
+  opacity: 0.6;
+  display: block;
+}
+
+.stat strong {
+  font-size: 20px;
+}
+
+/* TEAM BOX */
+.team-box {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.team-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  opacity: 0.6;
+}
+
+.team-name {
+  font-size: 18px;
+  margin: 6px 0 10px;
+}
+
+.members div {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* ANIMATIONS */
+@keyframes pulseText {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .data-block {
@@ -1068,12 +1232,134 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
     height: 28px;   /* 🔥 smaller, fits grid */
   }
 }
+
+.start-screen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, #000814, #000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  color: #4fd1ff;
+  font-family: 'Orbitron', monospace;
+}
+
+/* MAIN BOX */
+.boot-box {
+  width: 500px;
+  max-width: 90%;
+  padding: 40px;
+  border: 1px solid rgba(0,255,200,0.2);
+  box-shadow: 0 0 30px rgba(0,255,200,0.15);
+  backdrop-filter: blur(10px);
+}
+
+/* CLASSIFIED TEXT */
+.classified {
+  color: red;
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-align: center;
+  margin-bottom: 10px;
+  animation: flicker 1s infinite;
+}
+
+/* TITLE */
+.boot-title {
+  text-align: center;
+  font-size: 20px;
+  margin-bottom: 20px;
+  letter-spacing: 3px;
+  color: #4fd1ff;
+}
+
+/* LOGS */
+.boot-log {
+  height: 120px;
+  overflow: hidden;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 20px;
+}
+
+.boot-log div {
+  animation: fadeIn 0.3s ease;
+}
+
+/* PROGRESS BAR */
+.progress-bar {
+  height: 6px;
+  border: 1px solid #4fd1ff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background: linear-gradient(90deg, #4fd1ff, #0072ff);
+  transition: width 0.2s;
+  box-shadow: 0 0 10px #4fd1ff;
+}
+
+/* START BUTTON */
+.start-btn {
+  margin-top: 25px;
+  text-align: center;
+  padding: 10px;
+  border: 1px solid #4fd1ff;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: 0.2s;
+}
+
+.start-btn:hover {
+  background: rgba(0,255,200,0.1);
+  box-shadow: 0 0 10px #4fd1ff;
+}
+
+/* ANIMATIONS */
+@keyframes flicker {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
 
-<div class="container {redAlert ? 'alert-active' : ''}">
+<div class="container {redAlert ? 'alert-active' : ''} {shakeScreen ? 'shake' : ''}">
 
   <Background />
+{#if !bgStarted}
+  <div class="start-screen" on:click={startGame}>
 
+    <div class="boot-box">
+
+      <div class="classified">FOR YOUR EYES ONLY</div>
+
+      <div class="boot-title">MISSION CONTROL SYSTEM</div>
+
+      <div class="boot-log">
+        {#each bootLogs as log}
+          <div>{log}</div>
+        {/each}
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress" style="width: {bootProgress}%"></div>
+      </div>
+
+      {#if bootProgress >= 100}
+        <div class="start-btn">▶ INITIATE MISSION</div>
+      {/if}
+
+    </div>
+  </div>
+{/if}
   {#if redAlert}
     <div class="alert"></div>
   {/if}
@@ -1398,14 +1684,46 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   {/if}
 
   {#if gameOver}
-    <div class="end-screen">
-      <div class="end-box">
-        <h1>{result === "WIN" ? "MISSION SUCCESS" : "MISSION FAILED"}</h1>
-        <p>Time Left: {timeLeft}s</p>
-        <p>Strikes: {damage}/3</p>
+  <div class="end-screen">
+    <div class="end-box {result === 'WIN' ? 'win' : 'loss'}">
+
+      <div class="end-header">
+        {result === "WIN" ? "MISSION SUCCESS" : "MISSION FAILED"}
       </div>
+
+      <div class="end-sub">
+        {result === "WIN"
+          ? "All systems stabilized"
+          : "Critical failure detected"}
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <span>TIME LEFT</span>
+          <strong>{timeLeft}s</strong>
+        </div>
+
+        <div class="stat">
+          <span>STRIKES</span>
+          <strong>{damage}/3</strong>
+        </div>
+      </div>
+
+      {#if teamData}
+        <div class="team-box">
+          <div class="team-title">CREW</div>
+          <div class="team-name">{teamData.teamName}</div>
+
+          <div class="members">
+            <div>👤 {teamData.member1}</div>
+            <div>👤 {teamData.member2}</div>
+          </div>
+        </div>
+      {/if}
+
     </div>
-  {/if}
+  </div>
+{/if}
 {#if expandedPanel !== null}
   <div class="overlay" on:click={closePanel}></div>
 {/if}

@@ -5,6 +5,8 @@
   let teamName = "";
   let member1 = "";
   let member2 = "";
+  let member3 = "";
+  let member4 = "";
 
   let loading = false;
   let error = "";
@@ -18,7 +20,7 @@
   async function start() {
     error = "";
 
-    if (!teamName || !member1 || !member2) {
+    if (!teamName || !member1 || !member2 || !member3 || !member4) {
       error = "All crew members required";
       return;
     }
@@ -28,15 +30,17 @@
     const teamId = Date.now().toString();
 
     const payload = {
-      teamId,
-      teamName,
-      member1,
-      member2,
-      type: "ENTRY"
-    };
+  teamId,
+  teamName,
+  member1,
+  member2,
+  member3,
+  member4,
+  type: "ENTRY"
+};
 
     try {
-      await fetch("https://script.google.com/macros/s/AKfycbxytICDtpJuj6qWckALpMrHGrqpH7N84ZKEN6eJwzmZNAIbrkOcxDLC_e1OACJFj6c0Lw/exec", {
+      await fetch("https://script.google.com/macros/s/AKfycbzD1yqAXwM_hsA4rIcTOu3TXBKOuGXD87nUYOP-xSQgQqihCFBlV4V7Le5R7nKP5gTt1g/exec", {
         method: "POST",
         mode: "no-cors",
         body: JSON.stringify(payload)
@@ -254,6 +258,8 @@
     <input placeholder="Team Name" bind:value={teamName} />
     <input placeholder="Crew Member 1" bind:value={member1} />
     <input placeholder="Crew Member 2" bind:value={member2} />
+    <input placeholder="Crew Member 3" bind:value={member3} />
+<input placeholder="Crew Member 4" bind:value={member4} />
 
     {#if error}
       <div class="error">{error}</div>

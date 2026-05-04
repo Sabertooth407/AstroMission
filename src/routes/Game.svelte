@@ -82,6 +82,20 @@ const SPEED = 1200; // km/h
 const TOTAL_DISTANCE = TOTAL_HOURS * SPEED; // 75600
 let distance = TOTAL_DISTANCE;
 
+function startTimer() {
+  if (interval) return; // prevent duplicate
+
+  interval = setInterval(() => {
+    timeLeft--;
+
+    if (timeLeft <= 10 && timeLeft > 0) {
+      speak(timeLeft.toString());
+    }
+
+    if (timeLeft <= 0) endGame("LOSS");
+  }, 1000);
+}
+
 onMount(() => {
   const interval = setInterval(() => {
     // reduce based on real seconds (slow)
@@ -175,17 +189,7 @@ bgMusic.volume = 0.15;
 setTimeout(() => {
   speak("System initialized. All systems nominal. Communications stable.");
 }, 500);
-    interval = setInterval(() => {
-  timeLeft--;
 
-  // 🔊 PERFECTLY SYNCED COUNTDOWN
-  if (timeLeft <= 10 && timeLeft > 0) {
-    speak(timeLeft.toString());
-  }
-
-  if (timeLeft <= 0) endGame("LOSS");
-
-}, 1000);
 
     
   });
@@ -221,7 +225,7 @@ if (res === "WIN") {
   }
 
   try {
-    await fetch("https://script.google.com/macros/s/AKfycbxytICDtpJuj6qWckALpMrHGrqpH7N84ZKEN6eJwzmZNAIbrkOcxDLC_e1OACJFj6c0Lw/exec", {
+    await fetch("https://script.google.com/macros/s/AKfycbzD1yqAXwM_hsA4rIcTOu3TXBKOuGXD87nUYOP-xSQgQqihCFBlV4V7Le5R7nKP5gTt1g/exec", {
       method: "POST",
       mode: "no-cors",
       body: JSON.stringify(payload)
@@ -284,6 +288,7 @@ function startGame() {
 
   bgMusic.play().catch(() => {});
   bgStarted = true;
+  startTimer();
 }
 
   $: redAlert = timeLeft <= 120;
@@ -862,26 +867,50 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 .terminal {
   flex: 1;
   min-height: 0;
-  overflow: hidden;     
+  overflow: hidden;
+
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-    margin-top: 10px;
-  padding: 8px 10px;
-  background: rgba(0, 20, 40, 0.4);
+
+  padding: 10px;
+  background: rgba(0, 20, 40, 0.5);
   border-radius: 6px;
 }
 
 .terminal div {
   font-size: 11px;
   color: #00ff88;
-  opacity: 0.85;
   font-family: monospace;
-  line-height: 1.3;
-  animation: flicker 0.25s;
   letter-spacing: 2px;
-}
+  opacity: 0.85;
+  line-height: 1.4;
 
+  animation: fadeIn 0.15s ease;
+}
+@media (max-width: 900px) {
+
+  .data-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .data-side {
+    flex: 1;
+  }
+
+  .terminal {
+    height: 120px;       /* 🔥 fixed visible area */
+    flex: none;          /* 🔥 prevent shrinking */
+    overflow: hidden;
+  }
+
+  .terminal div {
+    font-size: 10px;     /* readable */
+    letter-spacing: 1px; /* tighter spacing */
+  }
+}
 @keyframes flicker {
   0% { opacity: 0; }
   100% { opacity: 1; }
@@ -1329,6 +1358,32 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.serial-box, .indicator-box {
+  padding: 10px;
+  border: 1px solid rgba(0,198,255,0.4);
+  border-radius: 6px;
+  background: rgba(0, 10, 25, 0.7);
+  margin-bottom: 8px;
+}
+
+.serial-value {
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: #00c6ff;
+  text-shadow: 0 0 8px #00c6ff;
+}
+
+.indicator-value {
+  font-size: 16px;
+  color: #ffd500; /* 🔥 different color = stands out */
+  text-shadow: 0 0 6px #ffd500;
+}
+
+.serial-label, .indicator-label {
+  font-size: 10px;
+  opacity: 0.6;
+}
 </style>
 
 <div class="container {redAlert ? 'alert-active' : ''} {shakeScreen ? 'shake' : ''}">
@@ -1512,8 +1567,15 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 
   <!-- LEFT -->
   <div class="data-block">
-    <div>SERIAL: {serial}</div>
-    <div>IND: {indicator}</div>
+    <div class="serial-box">
+  <div class="serial-label">SERIAL</div>
+  <div class="serial-value">{serial}</div>
+</div>
+
+<div class="indicator-box">
+  <div class="indicator-label">INDICATOR</div>
+  <div class="indicator-value">{indicator}</div>
+</div>
 
     {#if teamData}
       <div class="data-line">
@@ -1545,14 +1607,32 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
     </div>
   </div>
 </div>
+
+<div class="data-line">
+  <span class="label">CREW-3:</span>
+  <div class="scroll-box">
+    <div class="scroll-inner">
+      <span>{teamData.member3}</span>
+      <span>{teamData.member3}</span>
+    </div>
+  </div>
+</div>
+
+<div class="data-line">
+  <span class="label">CREW-4:</span>
+  <div class="scroll-box">
+    <div class="scroll-inner">
+      <span>{teamData.member4}</span>
+      <span>{teamData.member4}</span>
+    </div>
+  </div>
+</div>
     {/if}
 
+
+
     <!-- LEFT TERMINAL -->
-    <div class="terminal left">
-      {#each terminalLines as line}
-        <div>{line}</div>
-      {/each}
-    </div>
+    
   </div>
 
   <!-- RIGHT -->
@@ -1573,20 +1653,15 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
 
     <!-- 🔥 RIGHT TERMINAL (NEW) -->
     <div class="terminal right">
-      {#each terminalLines.slice().reverse() as line}
-        <div>{line}</div>
-      {/each}
-    </div>
+  {#each terminalLines as line}
+    <div>{line}</div>
+  {/each}
+</div>
 
   </div>
 
 </div>
 
-<div class="terminal">
-  {#each terminalLines as line}
-    <div>{line}</div>
-  {/each}
-</div>
 
 </div>
     </div>
@@ -1715,9 +1790,11 @@ $: progress = 0.15 + (1 - timeLeft / 420) * 0.1;
           <div class="team-name">{teamData.teamName}</div>
 
           <div class="members">
-            <div>👤 {teamData.member1}</div>
-            <div>👤 {teamData.member2}</div>
-          </div>
+  <div>👤 {teamData.member1}</div>
+  <div>👤 {teamData.member2}</div>
+  <div>👤 {teamData.member3}</div>
+  <div>👤 {teamData.member4}</div>
+</div>
         </div>
       {/if}
 
